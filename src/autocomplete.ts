@@ -46,12 +46,22 @@ function levenshteinDistance(s: string, t: string): number {
 }
 
 async function getWordDistances(word: string): Promise<Output[]> {
-    const words: string[] = (await Bun.file("/usr/share/dict/words").text()).split("\n");
+    const file = await Bun.file("/usr/share/dict/words");
+
+    if (!file.exists()) {
+        throw new Error("/usr/share/dict/words does not exist")
+    }
+
+    if ((await file.text()).split("\n").indexOf(word) > -1) {
+        return []
+    }
+
+    const words: string[] = (await file.text()).split("\n");
 
     const distances: Output[] = []
 
-    for (let i = 0; i < words.length; ++i) {
-        const w = words[i]?.toLowerCase();
+    words.map((value) => {
+        const w = value.toLowerCase();
         const out: Output = {
             distance: levenshteinDistance(word, w!),
             word: w!
@@ -59,8 +69,7 @@ async function getWordDistances(word: string): Promise<Output[]> {
 
         if (out.distance <= 3)
             distances.push(out);
-
-    }
+    })
 
     return distances;
 }
