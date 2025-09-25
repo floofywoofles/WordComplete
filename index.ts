@@ -1,17 +1,11 @@
-import { levenshteinDistance, getWordDistances, bubbleSort } from "./src/autocomplete";
+import { levenshteinDistance, getWordDistances, bubbleSort, isIncorrectlySpelledWord } from "./src/autocomplete";
 
-const word = "accur"
-const distances = bubbleSort(await getWordDistances(word))
-
-let out = [];
-
-for (let i = 0; i < distances.length; ++i) {
-    if (word.toLowerCase() === distances[i]!.word.toLowerCase()) {
-        break;
-    }
-    if (distances[i]!.word.toLowerCase().startsWith(word.toLowerCase())) {
-        out.push(distances[i])
-    }
+const word = "Heee"
+if (await isIncorrectlySpelledWord(word) === false) {
+    console.log("Word is spelled correctly")
+    process.exit(0);
 }
 
-console.log(out.slice(0, 10));
+const distances = bubbleSort(await getWordDistances(word))
+
+console.log(distances.slice(0, 10));

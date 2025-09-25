@@ -100,11 +100,16 @@ function bubbleSort(arr: Array<any>): Array<any> {
 }
 
 async function isIncorrectlySpelledWord(word: string): Promise<boolean> {
-    return (await isWordInDict(word)) ? false : true
+    try {
+        return (await isWordInDict(word)) || (await getWordDistances(word)).at(0)!.word.toLowerCase() === word.toLowerCase() ? false : true
+    } catch (e) {
+        return true;
+    }
 }
 
 async function isWordInDict(word: string): Promise<boolean> {
-    return ((await Bun.file("/usr/share/dict/words").text()).split("\n").indexOf(word) > -1) ? true : false;
+    // Ugly one liner
+    return (((await Bun.file("/usr/share/dict/words").text()).toLowerCase()).split("\n").indexOf(word.toLowerCase()) > -1) ? true : false;
 }
 
 export { levenshteinDistance, getWordDistances, bubbleSort, isIncorrectlySpelledWord }
