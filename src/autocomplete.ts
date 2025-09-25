@@ -3,58 +3,61 @@ type Output = {
     word: string
 }
 
-function levenshteinDistance(s: string, t: string): number {
-    const m: number = s.length;
-    const n: number = t.length;
+const MAXDISTANCE = 50;
 
-    if (m === undefined) {
-        return -1;
+function levenshteinDistance(s1: string, s2: string, maxDistance: number = MAXDISTANCE): number {
+    const m = s1.length;
+    const n = s2.length;
+
+    if (Math.abs(m - n) > maxDistance) return maxDistance + 1;
+    if (m === 0) return n > maxDistance ? maxDistance + 1 : n;
+    if (n === 0) return m > maxDistance ? maxDistance + 1 : m;
+
+    if (m < n) return levenshteinDistance(s2, s1, maxDistance);
+
+    let prev = new Array<number>(n + 1).fill(0);
+    let curr = new Array<number>(n + 1).fill(0);
+
+    for (let j = 0; j <= n; j++) {
+        prev[j] = j;
+        if (prev[j]! > maxDistance) return maxDistance + 1;
     }
 
-    if (n === undefined) {
-        return -1;
-    }
+    for (let i = 1; i <= m; i++) {
+        curr[0] = i;
+        if (curr[0] > maxDistance) return maxDistance + 1;
 
-    let matrix: number[][] = Array(m).fill([]).map(() => Array(n).fill(0));
+        for (let j = 1; j <= n; j++) {
+            const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+            curr[j] = Math.min(
+                prev[j]! + 1,
+                curr[j - 1]! + 1,
+                prev[j - 1]! + cost
+            );
 
-    for (let j = 0; j < n; ++j) {
-        matrix[0]![j] = j;
-    }
-
-    for (let i = 0; i < m; ++i) {
-        matrix[i]![0] = i;
-    }
-
-    for (let i = 1; i < m; ++i) {
-        for (let j = 1; j < n; ++j) {
-            let cost: number;
-            if (s[i - 1] === t[j - 1]) {
-                cost = 0;
-            } else {
-                cost = 1;
-            }
-
-            matrix[i]![j] = Math.min(
-                matrix[i - 1]![j]! + 1,
-                matrix[i]![j - 1]! + 1,
-                matrix[i - 1]![j - 1]! + cost
-            )
+            // Early exit if this cell exceeds max
+            if (curr[j]! > maxDistance) return maxDistance + 1;
         }
+
+        [prev, curr] = [curr, prev];
+        curr.fill(0);
     }
 
-    return (matrix[m - 1]![n - 1]!);
+    return prev[n]!;
 }
 
 async function getWordDistances(word: string): Promise<Output[]> {
+    // if (await isIncorrectlySpelledWord(word) === false) return [];
+
     const file = await Bun.file("/usr/share/dict/words");
 
     if (!file.exists()) {
         throw new Error("/usr/share/dict/words does not exist")
     }
 
-    if ((await file.text()).split("\n").indexOf(word) > -1) {
-        return []
-    }
+    // if ((await file.text()).split("\n").indexOf(word) > -1) {
+    //     return []
+    // }
 
     const words: string[] = (await file.text()).split("\n");
 
@@ -62,13 +65,15 @@ async function getWordDistances(word: string): Promise<Output[]> {
 
     words.map((value) => {
         const w = value.toLowerCase();
-        const out: Output = {
-            distance: levenshteinDistance(word, w!),
-            word: w!
-        }
+        if (w.startsWith(word.at(0)!.toLowerCase())) {
+            const out: Output = {
+                distance: levenshteinDistance(word, w!),
+                word: w!
+            }
 
-        if (out.distance <= 3)
-            distances.push(out);
+            if (out.distance <= 3)
+                distances.push(out);
+        }
     })
 
     return distances;
@@ -94,4 +99,12 @@ function bubbleSort(arr: Array<any>): Array<any> {
     return sorted;
 }
 
-export { levenshteinDistance, getWordDistances, bubbleSort }
+async function isIncorrectlySpelledWord(word: string): Promise<boolean> {
+    return (await isWordInDict(word)) ? false : true
+}
+
+async function isWordInDict(word: string): Promise<boolean> {
+    return ((await Bun.file("/usr/share/dict/words").text()).split("\n").indexOf(word) > -1) ? true : false;
+}
+
+export { levenshteinDistance, getWordDistances, bubbleSort, isIncorrectlySpelledWord }

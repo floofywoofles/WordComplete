@@ -1,6 +1,6 @@
 import { levenshteinDistance, getWordDistances, bubbleSort } from "./src/autocomplete";
 
-const word = "Hel"
+const word = "accur"
 const distances = bubbleSort(await getWordDistances(word))
 
 let out = [];
@@ -14,9 +14,4 @@ for (let i = 0; i < distances.length; ++i) {
     }
 }
 
-
-if (!out.length && word.toLowerCase()) {
-    out = distances.slice(0, 10);
-}
-
-console.log(out);
+console.log(out.slice(0, 10));
